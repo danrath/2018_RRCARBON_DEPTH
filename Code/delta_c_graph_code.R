@@ -122,5 +122,3 @@ anova(c_mod)
 
 c_mod<- lm(c_kgha_wholeprofile ~ year, data = subset(c_linegraph_long2, mgmttype=="CMT"))
 anova(c_mod)
-
-

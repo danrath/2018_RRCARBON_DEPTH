@@ -47,28 +47,29 @@ PLFA_2018 <- read_csv("PLFA_data.csv",col_types = cols(crop = col_factor(levels 
 View(PLFA_2018)
 
 #replace all blank spaces with 0
-PLFA_2018_nozero[is.na(PLFA_2018)] <- 0
+PLFA_2018[is.na(PLFA_2018)] <- 0
+PLFA_2018_nozero=PLFA_2018
 
 #calculate ratios used in the paper
-PLFA_2018_nozero$KMScyclo1<-PLFA_2018_nozero$`067: 17:0 cyclo w7c`/PLFA_2018_nozero$`050: 16:1 w7c`
+PLFA_2018_nozero$KMScyclo2<-PLFA_2018_nozero$`099: 19:0 cyclo w7c`/PLFA_2018_nozero$`081: 18:1 w7c`
 
 PLFA_2018_nozero$monounsat=PLFA_2018_nozero$`052: 16:1 w5c`+PLFA_2018_nozero$`050: 16:1 w7c`+PLFA_2018_nozero$`079: 18:1 w9c`+PLFA_2018_nozero$`081: 18:1 w7c`
 
 PLFA_2018_nozero$sat =PLFA_2018_nozero$`011: 12:0`+PLFA_2018_nozero$`026: 14:0`+PLFA_2018_nozero$`041: 15:0`+PLFA_2018_nozero$`055: 16:0`+PLFA_2018_nozero$`071: 17:0`+PLFA_2018_nozero$`112:20:00`
 
-#code used to generate graphs
+PLFA_2018_nozero$Sat_Unsat=PLFA_2018_nozero$sat/PLFA_2018_nozero$monounsat
 
+#code used to generate graphs
 levels(PLFA_2018_nozero$depth_upper)<-c("0-15cm", "15-60cm", "60-100 cm")
 
 timepoint_list=split(PLFA_2018_nozero, f=PLFA_2018_nozero$timepoint)
 
 #automate summary graphs - designate the response variables used to make the graphs
-variables=names(PLFA_2018_nozero)[c(12,35,98:143)]
+variables=names(PLFA_2018_nozero)[c(9,10,63:67)]
 variables=set_names(variables, variables)
 all_graphs_boxplot=map(timepoint_list,~map(variables, plot_boxplot, graphvar=.x, xvar="mgmttype", fillvar= "depth_upper", title= (.x[1,]) ))
 
-
-
+all_graphs_boxplot$TP2$mic_c
 #color order - green (omt), blue (LMT), red (CMT)
 
 sat_plot=all_graphs_boxplot$TP2$Sat_Unsat+
@@ -95,7 +96,7 @@ grampos_plot=all_graphs_boxplot$TP2$Grampos_Gramneg+
 cyclo_plot=all_graphs_boxplot$TP2$KMScyclo2+
   theme(plot.title = element_text(hjust = 0.5),  axis.title.x = element_blank(), axis.text.x  = element_blank(),
         axis.ticks.x = element_blank())+
-  labs(y = "Cyclo 17:pre Ratio") +
+  labs(y = "Cyclo 19:pre Ratio") +
   theme(axis.title = element_text(size=9, vjust=1))+
   theme(legend.position="none")+
   geom_jitter(position=position_jitter(0.2))+
@@ -114,6 +115,7 @@ mic_c=all_graphs_boxplot$TP2$mic_c+
   #coord_cartesian(ylim =c(0,4))+
   ggtitle(label=element_blank())
 
+mic_c
 
 PLFA_figure <- ggarrange(mic_c, sat_plot, grampos_plot, cyclo_plot,
                     ncol = 2, nrow = 2)
@@ -122,13 +124,14 @@ PLFA_figure
 
 #significance testing
 PLFA_Stats<-PLFA_2018_nozero%>%
-  filter(depth_upper=="60"& timepoint=="TP2")
+  filter(depth_upper=="0-15cm" & timepoint=="TP2")
 
 #repeated this set of code for each indicator
-Groups_mod<- lm(Sat_Unsat ~ mgmttype, data = PLFA_Stats)
+Groups_mod<- lm(mic_c ~ mgmttype, data = PLFA_Stats)
+
 TP2_L = emmeans(Groups_mod,pairwise~mgmttype, ref=1)
 results<-summary(TP2_L, infer = T)$contrast
-TukeyHSD(TP2_L)
+results
 
 
 

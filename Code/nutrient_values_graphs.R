@@ -25,6 +25,10 @@ Compiled_Data_2018<-read_csv("nutrient_values.csv",
                              
 )
 
+Compiled_Data_2018$totaln<-Compiled_Data_2018$nitrate+Compiled_Data_2018$ammonium
+Compiled_Data_2018$totaln_kg_ha<-Compiled_Data_2018$nitrate_kg_ha+Compiled_Data_2018$ammonium_kg_ha
+
+
 #code for graphs - 60-100 cm
 Compiled_Data_20182<-Compiled_Data_2018%>%
   filter(depth_lower=="100")
@@ -80,8 +84,7 @@ phosphorus_60100<-ggplot(data=phosphorus_sum2,
                          aes(x=timepoint, y=avg, colour=mgmttype, group = mgmttype)) +
   geom_errorbar(aes(ymin=avg-se, ymax=avg+se), width=.1, lwd=1) +
   geom_line(lwd=1.5)+ labs(x=NULL, y = "Phosphorus (kg/ha)") +
-  # coord_cartesian(ylim = c(0, 800)) +
-  #ggtitle("DOC Sum")+
+  coord_cartesian(ylim = c(0, 40)) +
   theme(legend.position="none")+
   scale_color_manual(labels=c("Organic", "Mixed", "Conventional"), values=c("#00BA38",  "#619CFF","#F8766D" ))+
   scale_x_discrete(labels=c("TP1" = "Feb", "TP2" = "Jun",
@@ -92,8 +95,7 @@ sulfur_60100<-ggplot(data=sulfur_sum2,
                      aes(x=timepoint, y=avg, colour=mgmttype, group = mgmttype)) +
   geom_errorbar(aes(ymin=avg-se, ymax=avg+se), width=.1, lwd=1) +
   geom_line(lwd=1.5)+ labs(x=NULL, y = "Sulfur (kg/ha)") +
-  # coord_cartesian(ylim = c(0, 250)) +
-  #ggtitle("DOC Sum")+
+  coord_cartesian(ylim = c(0, 42)) +
   theme(axis.text.y = element_text(color = "grey20", size = 9,vjust = 1, face = "plain"))+
   theme(legend.position="none")+
   scale_color_manual(labels=c("Organic", "Mixed", "Conventional"), values=c("#00BA38",  "#619CFF","#F8766D" ))+
@@ -144,7 +146,7 @@ doc_015<-ggplot(data=doc_sum3,
   geom_errorbar(aes(ymin=avg-se, ymax=avg+se), width=.1, lwd=1) +
   geom_line(lwd=1.5)+ labs(x=NULL, y = "DOC from 0-15 cm \n (kg/ha)") +
   theme(legend.position="none")+
-  #coord_cartesian(ylim = c(0, 1000)) +
+  coord_cartesian(ylim = c(0, 300)) +
   #ggtitle("DOC Sum")+
   scale_color_manual(labels=c("Organic", "Mixed", "Conventional"), values=c("#00BA38",  "#619CFF","#F8766D" ))+
   scale_x_discrete(labels=c("TP1" = "Feb", "TP2" = "Jun",
@@ -155,7 +157,7 @@ totaln_015<-ggplot(data=totaln_sum3,
                    aes(x=timepoint, y=avg, colour=mgmttype, group = mgmttype)) +
   geom_errorbar(aes(ymin=avg-se, ymax=avg+se), width=.1, lwd=1) +
   geom_line(lwd=1.5)+ labs(x=NULL, y = "Total N from 0-15 cm \n (NO3+NH4) (kg/ha)") +
-  # coord_cartesian(ylim = c(0, 150)) +
+  coord_cartesian(ylim = c(0, 53)) +
   theme(legend.position="none")+
   scale_color_manual(labels=c("Organic", "Mixed", "Conventional"), values=c("#00BA38",  "#619CFF","#F8766D" ))+
   scale_x_discrete(labels=c("TP1" = "Feb", "TP2" = "Jun",
@@ -166,7 +168,7 @@ phosphorus_015<-ggplot(data=phosphorus_sum3,
                        aes(x=timepoint, y=avg, colour=mgmttype, group = mgmttype)) +
   geom_errorbar(aes(ymin=avg-se, ymax=avg+se), width=.1, lwd=1) +
   geom_line(lwd=1.5)+ labs(x=NULL, y = "Phosphorus from 0-15 cm \n  (kg/ha)") +
-  # coord_cartesian(ylim = c(0, 800)) +
+  coord_cartesian(ylim = c(0, 410)) +
   #ggtitle("DOC Sum")+
   theme(legend.position="none")+
   scale_color_manual(labels=c("Organic", "Mixed", "Conventional"), values=c("#00BA38",  "#619CFF","#F8766D" ))+
@@ -178,7 +180,7 @@ sulfur_015<-ggplot(data=sulfur_sum3,
                    aes(x=timepoint, y=avg, colour=mgmttype, group = mgmttype)) +
   geom_errorbar(aes(ymin=avg-se, ymax=avg+se), width=.1, lwd=1) +
   geom_line(lwd=1.5)+ labs(x=NULL, y = "Sulfur from 0-15 cm \n  (kg/ha)") +
-  # coord_cartesian(ylim = c(0, 250)) +
+  coord_cartesian(ylim = c(0, 40)) +
   #ggtitle("DOC Sum")+
   theme(axis.text.y = element_text(color = "grey20", size = 9,vjust = 1, face = "plain"))+
   theme(legend.position="none")+
@@ -193,96 +195,11 @@ figure4 <- ggarrange(doc_015, totaln_015, phosphorus_015, sulfur_015,
                      ncol = 2, nrow = 2)
 figure4
 
-#code for calcium graphs 
 
 
-ca_all<-ggplot(data=
-                 (
-                   Compiled_Data_2018%>%
-                     group_by(plot, timepoint, mgmttype)%>%
-                     dplyr::summarise(sum_ca=sum(calcium_kg_ha, na.rm=TRUE))%>%
-                     group_by(timepoint, mgmttype)%>%
-                     dplyr::summarise(avg=mean(sum_ca), se=sd(sum_ca)/sqrt(n()))
-                 ),
-               aes(x=timepoint, y=avg, colour=mgmttype, group = mgmttype)) +
-  geom_errorbar(aes(ymin=avg-se, ymax=avg+se), width=.1, lwd=1) +
-  geom_line(lwd=1.5)+ labs(x=NULL, y = "Calcium (Whole Profile) (kg/ha)") +
-  theme(legend.position="none")+
-  #coord_cartesian(ylim = c(0, 1000)) +
-  #ggtitle("DOC Sum")+
-  scale_color_manual(labels=c("Organic", "Mixed", "Conventional"), values=c("#00BA38",  "#619CFF","#F8766D" ))+
-  scale_x_discrete(labels=c("TP1" = "Feb", "TP2" = "Jun",
-                            "TP3" = "Aug", "TP4" = "Feb"))
-ca_all
-
-ca_015<-ggplot(data=
-                 (
-                   Compiled_Data_2018%>%
-                     filter(depth_upper=="0")%>%
-                     group_by(plot, timepoint, mgmttype)%>%
-                     dplyr::summarise(sum_ca=sum(calcium_kg_ha, na.rm=TRUE))%>%
-                     group_by(timepoint, mgmttype)%>%
-                     dplyr::summarise(avg=mean(sum_ca), se=sd(sum_ca)/sqrt(n()))
-                 ),
-               aes(x=timepoint, y=avg, colour=mgmttype, group = mgmttype)) +
-  geom_errorbar(aes(ymin=avg-se, ymax=avg+se), width=.1, lwd=1) +
-  geom_line(lwd=1.5)+ labs(x=NULL, y = "Calcium (0-15 cm) (kg/ha)") +
-  theme(legend.position="none")+
-  #coord_cartesian(ylim = c(0, 1000)) +
-  #ggtitle("DOC Sum")+
-  scale_color_manual(labels=c("Organic", "Mixed", "Conventional"), values=c("#00BA38",  "#619CFF","#F8766D" ))+
-  scale_x_discrete(labels=c("TP1" = "Feb", "TP2" = "Jun",
-                            "TP3" = "Aug", "TP4" = "Feb"))
-ca_015
-
-ca_1560<-ggplot(data=
-                  (
-                    Compiled_Data_2018%>%
-                      filter(depth_upper=="15")%>%
-                      group_by(plot, timepoint, mgmttype)%>%
-                      dplyr::summarise(sum_ca=sum(calcium_kg_ha, na.rm=TRUE))%>%
-                      group_by(timepoint, mgmttype)%>%
-                      dplyr::summarise(avg=mean(sum_ca), se=sd(sum_ca)/sqrt(n()))
-                  ),
-                aes(x=timepoint, y=avg, colour=mgmttype, group = mgmttype)) +
-  geom_errorbar(aes(ymin=avg-se, ymax=avg+se), width=.1, lwd=1) +
-  geom_line(lwd=1.5)+ labs(x=NULL, y = "Calcium (15-60 cm) (kg/ha)") +
-  theme(legend.position="none")+
-  #coord_cartesian(ylim = c(0, 1000)) +
-  #ggtitle("DOC Sum")+
-  scale_color_manual(labels=c("Organic", "Mixed", "Conventional"), values=c("#00BA38",  "#619CFF","#F8766D" ))+
-  scale_x_discrete(labels=c("TP1" = "Feb", "TP2" = "Jun",
-                            "TP3" = "Aug", "TP4" = "Feb"))
-ca_1560
-
-ca_60100<-ggplot(data=
-                   (
-                     Compiled_Data_2018%>%
-                       filter(depth_upper=="60")%>%
-                       group_by(plot, timepoint, mgmttype)%>%
-                       dplyr::summarise(sum_ca=sum(calcium_kg_ha, na.rm=TRUE))%>%
-                       group_by(timepoint, mgmttype)%>%
-                       dplyr::summarise(avg=mean(sum_ca), se=sd(sum_ca)/sqrt(n()))
-                   ),
-                 aes(x=timepoint, y=avg, colour=mgmttype, group = mgmttype)) +
-  geom_errorbar(aes(ymin=avg-se, ymax=avg+se), width=.1, lwd=1) +
-  geom_line(lwd=2)+ labs(x=NULL, y = "Calcium (60-100 cm) (kg/ha)") +
-  # theme(legend.position="none")+
-  #coord_cartesian(ylim = c(0, 1000)) +
-  #ggtitle("DOC Sum")+
-  theme(legend.position="none")+
-  scale_color_manual(labels=c("ORG", "WCC-F", "CONV"), values=c("#00BA38",  "#619CFF","#F8766D" ))+
-  scale_x_discrete(labels=c("TP1" = "Feb", "TP2" = "Jun",
-                            "TP3" = "Aug", "TP4" = "Feb"))
-ca_60100
-
-figure7 <- ggarrange(ca_all, ca_015, ca_1560, ca_60100,
-                     ncol = 2, nrow = 2)
-figure7
-
-
-
-#nutrient stats code - repeated for each depth
+#nutrient stats code - isolate each depth and test separately
+Stats<-Compiled_Data_2018%>%
+  filter(depth_upper=="60")
 
 doc_mod<- aov(doc ~ mgmttype+timepoint, data = Stats)
 anova(doc_mod)

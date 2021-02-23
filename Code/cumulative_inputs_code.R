@@ -4,9 +4,9 @@ library(readr)
 library(ggcorrplot)
 library(ggpubr)
 library(tidyverse)
+library(dplyr)
 
 
-library(readr)
 final_nutrient_summary <- read_csv("compiled_inputs_93_18.csv")
 #View(compost_analyses_all)
 
@@ -14,10 +14,10 @@ final_nutrient_summary <- read_csv("compiled_inputs_93_18.csv")
 CNPSK_total<-final_nutrient_summary%>%
   filter(year<"2018")%>%
   group_by(plot, mgmttype, year)%>%
-  summarise(
+  dplyr::summarise(
     compost_c_mean=mean(compost_c_kg_ha, na.rm=TRUE), 
-    corn_c_mean=mean(corn_C_final, na.rm=TRUE), 
-    tomato_c_mean=mean(tom_C_final, na.rm=TRUE),
+    corn_c_mean=mean(corn_C_kgha, na.rm=TRUE), 
+    tomato_c_mean=mean(tom_C_kgha, na.rm=TRUE),
     sudangrass_c_mean=mean(sudangrass_c_kg_ha, na.rm=TRUE),
     wheat_c_content_mean=mean(wheat_c_content_kg_ha, na.rm=TRUE),
     wcc_c_mean=mean(wcc_c_kgha, na.rm=TRUE), 
@@ -29,9 +29,8 @@ CNPSK_total<-final_nutrient_summary%>%
     compost_s_mean=mean(compost_s_kg_ha, na.rm=TRUE), 
     fert_s_mean=mean(fert_S_kg_ha, na.rm=TRUE),
     compost_k_mean=mean(compost_k_kg_ha, na.rm=TRUE), 
-    fert_k_mean=mean(fert_K_kg_ha, na.rm=TRUE),
-  )%>%
-  mutate(
+    fert_k_mean=mean(fert_K_kg_ha, na.rm=TRUE))%>%
+  dplyr::mutate(
     compost_c_sum=cumsum(compost_c_mean), 
     corn_c_sum=cumsum(corn_c_mean), 
     tomato_c_sum=cumsum(tomato_c_mean),
@@ -49,7 +48,7 @@ CNPSK_total<-final_nutrient_summary%>%
     fert_k_sum=cumsum(fert_k_mean),
   )%>%
   group_by(mgmttype, year)%>%
-  summarise(
+  dplyr::summarise(
     compost_c_mean=mean(compost_c_sum)/1000, 
     corn_c_mean=mean(corn_c_sum)/1000, 
     tomato_c_mean=mean(tomato_c_sum)/1000,
@@ -66,6 +65,7 @@ CNPSK_total<-final_nutrient_summary%>%
     compost_k_mean=mean(compost_k_sum)/1000, 
     fert_k_mean=mean(fert_s_sum)/1000,
   )
+
 
 CNPSK_cum_2017<-CNPSK_total%>%
   filter(year=="2017")
@@ -155,11 +155,4 @@ figure1
 
 c_plot
 
-#generate line graph
-c_graph<-ggplot(data = CNPSK_cum_2017) +
-  geom_line(aes(x = year, y = cumsum(c_avg), group = mgmttype, colour=mgmttype)) +
-  ylab("Cumulative kg/ha of C added") + 
-  theme(axis.text.x = element_text(angle=90, hjust = 1)) + 
-  scale_x_discrete(labels = CNPSK_cum_2017$year) + 
-  xlab("Year")
 
