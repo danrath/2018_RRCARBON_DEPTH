@@ -1,3 +1,8 @@
+Management system codes for the data files are as follows:
+CMT = CONV
+LMT = CONV+WCC
+OMT = ORG
+
 The raw FTIR data files are in the format (wavenumber, absorbance).
 
 The values also need to be formatted from exponential notation to values with 8 decimal places before plotting. 

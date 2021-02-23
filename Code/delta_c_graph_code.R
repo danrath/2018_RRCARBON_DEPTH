@@ -14,10 +14,20 @@ library(ggcorrplot)
 library(ggpubr)
 library(grid) 
 library(tidyverse)
-library(dplyr)
 
 
-library(readr)
+aggregate_data <- function(x, num_var, ...){
+  group_var <- quos(...)
+  num_var <- enquo(num_var)
+  
+  x %>%
+    dplyr::group_by(!!!group_var) %>%
+    dplyr::summarize(avg = mean(!!num_var,na.rm=TRUE), n = sum(!is.na(!!num_var)), 
+                     sd = sd(!!num_var, na.rm=TRUE), se = sd/sqrt(n), sum=sum(!!num_var, na.rm=TRUE), ci_lower = qt((0.05/2), n - 1) * se, ci_upper = qt(1 - (0.05/2), n - 1) * se)
+  
+}
+
+#import data
 c_linegraph <- read_csv("historic_c_n_data.csv", 
                         col_types = cols(depth_upper = col_factor(levels = c("60", 
                                                                              "15", "0")), mgmttype = col_factor(levels = c("CMT", 
@@ -30,10 +40,14 @@ c_linegraph$c_kgha_03=c_linegraph$bulkD_07*c_linegraph$depth_fraction*10000*(c_l
 c_linegraph$c_kgha_12=c_linegraph$bulkD_12*c_linegraph$depth_fraction*10000*(c_linegraph$percC_12/100)
 c_linegraph$c_kgha_18=c_linegraph$bulkD_12*c_linegraph$depth_fraction*10000*(c_linegraph$percC_18/100)
 
+c_linegraph$deltaC_93_12_kgha=c_linegraph$c_kgha_12-c_linegraph$c_kgha_93
+c_linegraph$deltaC_93_18_kgha=c_linegraph$c_kgha_18-c_linegraph$c_kgha_93
+c_linegraph$deltaC_12_18_kgha=c_linegraph$c_kgha_18-c_linegraph$c_kgha_12
+
 #summarize kg/ha values
 c_linegraph2<-c_linegraph%>%
-  group_by(plot, mgmttype)%>%
-  summarize(sum=sum(deltaC_93_18_kgha))
+  dplyr::group_by(plot, mgmttype)%>%
+  dplyr::summarize(sum=sum(deltaC_93_18_kgha))
 
 #generate delta C values for entire profile
 deltaC_93_18=aggregate_data(c_linegraph, deltaC_93_18_kgha, mgmttype, depth_upper)
@@ -63,18 +77,50 @@ deltac_93_18_graph <- deltac_9318+ scale_fill_manual(values=c("#F8766D", "#619CF
   geom_hline(yintercept = 0,size=0.5) +
   scale_x_discrete (labels=c("0"="0-15", "15"="15-60", "60"="60-100", "whole"="Whole Profile"))
 
-#statistical test code
+
+deltac_93_18_graph
+
+#statistical test  - test each depth separately as a function of management system
 c_linegraph1<-c_linegraph%>%
-  subset(depth_upper=="0")
+  subset(depth_upper=="60")
 
-c_linegraph2<-c_linegraph%>%
-  group_by(plot, mgmttype)%>%
-  summarize(sum=sum(deltaC_93_18_kgha))
-
-c_mod<- lm(deltaC_93_18_kgha ~ mgmttype, data = c_linegraph1)
+c_mod<- lm(deltaC_93_18_kgha ~ mgmttype+block, data = c_linegraph1)
 anova(c_mod)
-summary(emmeans(c_mod,~mgmttype),infer = c(T,F), level=.95)
-specific_variety_effects <- emmeans(c_mod,pairwise~mgmttype)
-summary(specific_variety_effects$contrasts,infer=T)
-summary(c_mod)
-TukeyHSD(c_mod)
+#block was not significant for any individual depth, or overall, so it was removed from the model
+
+c_linegraph_long<-c_linegraph%>%
+  dplyr::select(plot, mgmttype, depth_upper, c_kgha_93, c_kgha_18)%>%
+  pivot_longer(!plot:depth_upper, names_to = "year", values_to = "c_kgha")
+
+c_mod<- lm(c_kgha ~ mgmttype*depth_upper*year, data = c_linegraph_long)
+anova(c_mod)
+#management type, year, and management type:year was significant - tested each management type and depth separately to see if 1993 and 2018 values were different
+
+
+#repeat for each depth interval - change depth code
+c_mod_OMT<- lm(c_kgha ~ year, data = subset(c_linegraph_long, mgmttype=="OMT" & depth_upper=="60"))
+anova(c_mod_OMT)
+
+c_mod_LMT<- lm(c_kgha ~ year, data = subset(c_linegraph_long, mgmttype=="LMT" & depth_upper=="60"))
+anova(c_mod_LMT)
+
+c_mod_CMT<- lm(c_kgha ~ year, data = subset(c_linegraph_long, mgmttype=="CMT" & depth_upper=="0"))
+anova(c_mod_CMT)
+
+#whole profile statistics
+c_linegraph_long2<-c_linegraph%>%
+  dplyr::select(plot, mgmttype, depth_upper, c_kgha_93, c_kgha_18)%>%
+  dplyr::group_by(plot, mgmttype)%>%
+  dplyr::summarize(sum_93=sum(c_kgha_93), sum_18=sum(c_kgha_18))%>%
+pivot_longer(!plot:mgmttype, names_to = "year", values_to = "c_kgha_wholeprofile")
+
+c_mod<- lm(c_kgha_wholeprofile ~ year, data = subset(c_linegraph_long2, mgmttype=="OMT"))
+anova(c_mod)
+
+c_mod<- lm(c_kgha_wholeprofile ~ year, data = subset(c_linegraph_long2, mgmttype=="LMT"))
+anova(c_mod)
+
+c_mod<- lm(c_kgha_wholeprofile ~ year, data = subset(c_linegraph_long2, mgmttype=="CMT"))
+anova(c_mod)
+
+
